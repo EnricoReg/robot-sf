@@ -42,15 +42,21 @@ class BinaryOccupancyGrid():
         #y = np.linspace(-self.map_height/2 + self.cell_size['y']/2, self.map_height/2 - self.cell_size['y']/2, self.grid_size['y'])
         y = np.flip(y)
 
-        #Initializing matrices
-        self.X = np.zeros((self.grid_size['y'], self.grid_size['x']))
-        for i in range(self.X.shape[0]):
-            self.X[i,:] = x
+        # #Initializing matrices
+        # self.X = np.zeros((self.grid_size['y'], self.grid_size['x']))
+        # for i in range(self.X.shape[0]):
+        #     self.X[i,:] = x
 
-        self.Y = np.zeros((self.grid_size['y'], self.grid_size['x']))
-        for i in range(self.Y.shape[1]):
-            self.Y[:,i] = y
-
+        # self.Y = np.zeros((self.grid_size['y'], self.grid_size['x']))
+        # for i in range(self.Y.shape[1]):
+        #     self.Y[:,i] = y
+        
+        self.X,self.Y = np.meshgrid(x,y);
+        
+        self.min_val = np.array( [self.X[0,0] - self.cell_size['x']/2 ,  self.Y[-1,0] - self.cell_size['y']/2 ])
+        self.max_val = np.array([  self.X[0,-1] + self.cell_size['x']/2 ,   self.Y[0,0] + self.cell_size['y']/2 ])
+        
+        
         self.Occupancy = np.zeros((self.grid_size['y'],self.grid_size['x']), dtype = bool)
         self.OccupancyRaw = self.Occupancy.copy()
         self.OccupancyFixed = self.Occupancy.copy()
@@ -373,10 +379,7 @@ class BinaryOccupancyGrid():
         offset_y = self.map_height*margin
         offset = np.array([offset_x, offset_y])
 
-        min_val = np.array( [self.X[0,0] - self.cell_size['x']/2 ,  self.Y[-1,0] - self.cell_size['y']/2 ])
-        max_val = np.array([  self.X[0,-1] + self.cell_size['x']/2 ,   self.Y[0,0] + self.cell_size['y']/2 ])
-
-        valid_pairs = np.bitwise_and( (pair >= (min_val + offset)).all(axis = 1) , (pair <= (max_val - offset)).all(axis = 1) )
+        valid_pairs = np.bitwise_and( (pair >= (self.min_val + offset)).all(axis = 1) , (pair <= (self.max_val - offset)).all(axis = 1) )
 
         if valid_pairs.any():
             return pair[valid_pairs,:]
@@ -395,13 +398,7 @@ class BinaryOccupancyGrid():
         pair = self.check_if_valid_world_coordinates(pair)
         if not pair.any():
             raise ValueError('Invalid world coordinates with the current map!')
-        idx = np.zeros(pair.shape,dtype = int)
-        for i in range(pair.shape[0]):
-            idx_col = np.abs(self.X[0,:] - pair[i,0]).argmin()
-            idx_row = np.abs(self.Y[:,0] - pair[i,1]).argmin()
-            idx[i,0] = idx_row
-            idx[i,1] = idx_col
-        return idx
+        return self.convert_world_to_grid_no_error(pair)
 
     def convert_grid_to_world(self,pair):
         if not self.check_if_valid_grid_index(pair):
@@ -414,14 +411,8 @@ class BinaryOccupancyGrid():
         return val
 
     def convert_world_to_grid_no_error(self,pair):
-        idx = np.zeros(pair.shape, dtype = int)
-        for i in range(pair.shape[0]):
-            idx_col = np.abs(self.X[0,:] - pair[i,0]).argmin()
-            idx_row = np.abs(self.Y[:,0] - pair[i,1]).argmin()
-            idx[i,0] = idx_row
-            idx[i,1] = idx_col
-
-        return idx
+        return np.concatenate((np.abs(self.Y[:,0][:,np.newaxis] - pair[:,1].T).argmin(axis = 0)[:,np.newaxis], \
+                               np.abs(self.X[0,:][:,np.newaxis] - pair[:,0].T).argmin(axis = 0)[:,np.newaxis]), axis = 1)
 
 
     #update map from pedestrians simulation environment
@@ -463,6 +454,9 @@ class BinaryOccupancyGrid():
         self.X = self.X - new_position[0]
         self.Y = self.Y - new_position[1]
         self.grid_origin = [new_position[0], new_position[1]]
+        
+        self.min_val = np.array( [self.X[0,0] - self.cell_size['x']/2 ,  self.Y[-1,0] - self.cell_size['y']/2 ])
+        self.max_val = np.array([  self.X[0,-1] + self.cell_size['x']/2 ,   self.Y[0,0] + self.cell_size['y']/2 ])
         
     def center_map_frame(self):
         self.move_map_frame([self.map_length/2,self.map_height/2])
