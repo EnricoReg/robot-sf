@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 from datetime import datetime
 import os
 import sys
+import random
 
 #test
 
@@ -64,7 +65,9 @@ class LiDARscanner():
         start_pt = [x,y]
         self.scan_structure['data']['pose'] = [x,y,orient]
 
-        scan_length = len(self.scan_structure['data']['angles'])        
+        #scan_length = len(self.scan_structure['data']['angles'])
+        scan_length = self.num_readings
+
         if scan_noise is not None:
             lost_scans = np.where(np.random.random(scan_length) < scan_noise[0])[0]
             corrupt_scans = np.where(np.random.random(scan_length) < scan_noise[1])[0]
@@ -103,7 +106,7 @@ class LiDARscanner():
             if scan_noise is not None:
 
                 if i in corrupt_scans and not i in lost_scans:
-                    scanned_distance = np.random.random()*self.range[1]
+                    scanned_distance = random.random()*self.range[1]
                     self.scan_structure['data']['ranges'][i] = scanned_distance
                     
                     intercept = [0,0]                
