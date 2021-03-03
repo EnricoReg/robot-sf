@@ -144,7 +144,7 @@ def change_direction(p0,p1,current_positions,destinations,view_distance, angles,
 ###################################################################################
 # functions for simulator.py
 
-
+"""
 def fill_state(coordinate_a, coordinate_b, origin,box_size):
     if origin:
         distance = box_size *1.1
@@ -168,6 +168,43 @@ def fill_state(coordinate_a, coordinate_b, origin,box_size):
         }
     return mydict[coordinate_a]
 
+"""
+def fill_state(coordinate_a, coordinate_b, origin,box_size):
+
+    if origin:
+        distance = box_size *1.1
+    else:
+        distance = box_size *1.6
+        
+    if isinstance(coordinate_b,np.ndarray):
+        dim = len(coordinate_b)
+        return build_coordinates_array(coordinate_a, coordinate_b, dim, distance)
+    else:
+        return build_coordinates_scalar(coordinate_a, coordinate_b, distance)
+
+
+def build_coordinates_array(coordinate_a, coordinate_b, dim, distance):
+    if coordinate_a == 0:
+        return np.concatenate( (-distance*np.ones([dim,1]),coordinate_b[:, np.newaxis]) , axis = 1 )
+    elif coordinate_a == 1:
+        return np.concatenate( (coordinate_b[:, np.newaxis] , -distance*np.ones([dim,1]) ), axis = 1 )
+    elif coordinate_a == 2:
+        return np.concatenate( (distance*np.ones([dim,1]),coordinate_b[:, np.newaxis] ), axis = 1 )
+    elif coordinate_a == 3:
+        return np.concatenate( (coordinate_b[:, np.newaxis] , distance*np.ones([dim,1]) ), axis = 1 )
+
+               
+def build_coordinates_scalar(coordinate_a, coordinate_b, distance):
+    if coordinate_a == 0:
+        return np.array([-distance ,coordinate_b])
+    elif coordinate_a == 1:
+        return np.array([coordinate_b , -distance])
+    elif coordinate_a == 2:
+        return np.array([distance ,coordinate_b])
+    elif coordinate_a == 3:
+        return np.array([coordinate_b , distance])
+
+               
 
 # function used to correctly update groups indices after states are removed
 def fun_reduce_index(list_of_lists, num):

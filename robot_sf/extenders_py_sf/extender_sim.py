@@ -2,7 +2,7 @@
 """
 Created on Sat Dec  5 12:56:00 2020
 
-@author: Matteo & Enrico
+@author: Matteo Caruso, Enrico Regolin
 """
 
 # required if current directory is not found
@@ -252,86 +252,75 @@ class ExtdSimulator(psf.Simulator):
 
     # new function (update pedestrians on scene)
     def update_peds_on_scene(self):
-            
-            box_size = self.box_size
-                    
-            # mask of pedestrians to drop because they reached their target outside of the square
-            #Row of booleans indicating which pedestrian is out of bound (True) and which is still valid (False)
-            drop_out_of_bounds = np.any(np.absolute(self.peds.state[:,:2])>box_size*1.2, axis = 1)
-            
-            #Find row indices of pedestrians out of bounds: (Needed to update groups)
-            index_drop_out_of_bounds = np.where(np.any(np.absolute(self.peds.state[:,:2])>box_size*1.2, axis = 1))
-            
-            drop_zeroes = (self.peds.state[:,:2]==[0,0]).all(axis = 1) #Da capire ancora
-            
-            
-            #Find row indices of pedestrians in [0,0] to be removed
-            index_drop_zeroes = np.where(np.any(self.peds.state[:,:2]==[0,0],axis=1))
-            #print(index_drop_zeroes)
-            #drop agents which went out of the square (and respective groups)
-            
-            #Initialize mask all to true
-            mask = np.ones(drop_out_of_bounds.shape, dtype = bool)
-            
-            #Set to False pedestrians out of bounds and zeros
-            mask[drop_out_of_bounds] = False
-            mask[drop_zeroes]= False
-            
-            
-            #Create new pedestrians by applying the mask
-            new_state = self.peds.state[mask,:]
-            new_groups = self.peds.groups
-            ped_to_drop = index_drop_out_of_bounds[0].tolist() + index_drop_zeroes[0].tolist()
+        
+        box_size = self.box_size
+                
+        # mask of pedestrians to drop because they reached their target outside of the square
+        #Row of booleans indicating which pedestrian is out of bound (True) and which is still valid (False)
+        drop_out_of_bounds = np.any(np.absolute(self.peds.state[:,:2])>box_size*1.2, axis = 1)
+        
+        #Find row indices of pedestrians out of bounds: (Needed to update groups)
+        index_drop_out_of_bounds = np.where(np.any(np.absolute(self.peds.state[:,:2])>box_size*1.2, axis = 1))
+        
+        drop_zeroes = (self.peds.state[:,:2]==[0,0]).all(axis = 1) #Da capire ancora
+        
+        #Find row indices of pedestrians in [0,0] to be removed
+        index_drop_zeroes = np.where(np.any(self.peds.state[:,:2]==[0,0],axis=1))
+        #print(index_drop_zeroes)
+        #drop agents which went out of the square (and respective groups)
+        
+        #Initialize mask all to true
+        mask = np.ones(drop_out_of_bounds.shape, dtype = bool)
+        
+        #Set to False pedestrians out of bounds and zeros
+        mask[drop_out_of_bounds] = False
+        mask[drop_zeroes]= False
+        
+        #Create new pedestrians by applying the mask
+        new_state = self.peds.state[mask,:]
+        new_groups = self.peds.groups
+        ped_to_drop = index_drop_out_of_bounds[0].tolist() + index_drop_zeroes[0].tolist()
 
-            #Remove indexes of removed pedestrians from groups
-            #self.removePedestriansFromGroups(ped_to_drop)
-            index_drop = np.where(~mask)[0]
-            
-            mask2 = np.ones(self._stopped_peds.shape, dtype = bool)
-            mask2[index_drop] = False
-            
-            
-            #Clean pedestrians memory
-            self._stopped_peds = self._stopped_peds[mask2]
-            self._timer_stopped_peds = self._timer_stopped_peds[mask2]
-            self._last_known_ped_target = self._last_known_ped_target[mask2]
-            
-            
-            
-            
-            #print(self._stopped_peds.shape)
-            
-            for i in -np.sort(-index_drop):
-                for num,group in enumerate(new_groups):
-                    group = np.array(group)
-                    if i in group: # if the index removed is in the group, remove it from there
-                        new_groups[num] = group[~(group==i)].tolist()
-                new_groups = fun_reduce_index(new_groups, i)
-            
-            
-            
-            # IMPORTANT!!before adding new pedestrians, the vector of initial speeds also has to be cleaned
-            self.peds.initial_speeds = self.peds.initial_speeds[mask]
-            #self.peds.state = new_state
-            #self.peds.groups = self.peds.groups
-            
-            self.peds.update(new_state, new_groups)
+        #Remove indexes of removed pedestrians from groups
+        #self.removePedestriansFromGroups(ped_to_drop)
+        index_drop = np.where(~mask)[0]
+        
+        mask2 = np.ones(self._stopped_peds.shape, dtype = bool)
+        mask2[index_drop] = False
+        
+        
+        #Clean pedestrians memory
+        self._stopped_peds = self._stopped_peds[mask2]
+        self._timer_stopped_peds = self._timer_stopped_peds[mask2]
+        self._last_known_ped_target = self._last_known_ped_target[mask2]
+        
+        #print(self._stopped_peds.shape)
 
+        for i in -np.sort(-index_drop):
+            for num,group in enumerate(new_groups):
+                group = np.array(group)
+                if i in group: # if the index removed is in the group, remove it from there
+                    new_groups[num] = group[~(group==i)].tolist()
+            new_groups = fun_reduce_index(new_groups, i)
+            
 
-            #ACTIONS
-            
-            self.__generationActionSelector()
-            self.__groupActionSelector()
-            self.__stopActionSelector()
-            
-                    
+        # IMPORTANT!!before adding new pedestrians, the vector of initial speeds also has to be cleaned
+        self.peds.initial_speeds = self.peds.initial_speeds[mask]
+        #self.peds.state = new_state
+        #self.peds.groups = self.peds.groups
+        
+        self.peds.update(new_state, new_groups)
 
-            
-            #self.peds.update(self.peds.state, self.peds.groups)
-            #self.active_peds_update(self.peds.state[:,:2], self.peds.groups)
-            self.active_peds_update()
-            # re-initialize forces
-            self.forces = self.make_forces(self.config)
+        #ACTIONS
+        self.__generationActionSelector()
+        self.__groupActionSelector()
+        self.__stopActionSelector()
+        
+        #self.peds.update(self.peds.state, self.peds.groups)
+        #self.active_peds_update(self.peds.state[:,:2], self.peds.groups)
+        self.active_peds_update()
+        # re-initialize forces
+        self.forces = self.make_forces(self.config)
             
 
     def getNotGroupedPedestrianIndexes(self): #(TESTED !!)
@@ -455,7 +444,7 @@ class ExtdSimulator(psf.Simulator):
             #Needs to be generated group destination
             
             destination_a = random.choice([0,1,2,3])
-            destination_b = np.random.randint(-square_dim,square_dim)*np.ones((len(selected_ped),))
+            destination_b = random.randint(-square_dim,square_dim)*np.ones((len(selected_ped),))
             
             target_state = fill_state(destination_a, destination_b, False, self.box_size)
             
@@ -528,7 +517,7 @@ class ExtdSimulator(psf.Simulator):
         
         #Compute new group size
         new_group_max_size = min(len(idx_standalone), self.new_peds_params['max_standalone_grouping'])
-        new_group_size = np.random.randint(2, new_group_max_size + 1)
+        new_group_size = random.randint(2, new_group_max_size )
         
         #Select standalones to be grouped
         chosen_ped_idx = random.sample(idx_standalone, new_group_size)
@@ -560,8 +549,8 @@ class ExtdSimulator(psf.Simulator):
         
         
         #Now it is needed to update new group target
-        group_destination_a = np.random.choice([0,1,2,3]) #0:left, 1:bottom, 2:right, 3:top
-        group_destination_b = np.random.randint(-square_dim,square_dim)*np.ones((new_group_size,))
+        group_destination_a = random.choice([0,1,2,3]) #0:left, 1:bottom, 2:right, 3:top
+        group_destination_b = random.randint(-square_dim,square_dim)*np.ones((new_group_size,))
         
         #Now generate pedestrian target states
         target_states = fill_state(group_destination_a, group_destination_b, False, self.box_size)
@@ -622,7 +611,7 @@ class ExtdSimulator(psf.Simulator):
             
 
         #Define max number of pedestrians to be removed
-        max_ped_num = np.random.randint(1,len(self.peds.groups[group_index]))
+        max_ped_num = random.randint(1,len(self.peds.groups[group_index]))
                 
         #Select pedestrians index from group to be removed and form a new group
         new_group_idx = random.sample(self.peds.groups[group_index], max_ped_num)
@@ -658,7 +647,7 @@ class ExtdSimulator(psf.Simulator):
         #Continue (Set target new group -> update)
                 
         destination_a = random.choice([0,1,2,3])
-        destination_b = np.random.randint(-square_dim,square_dim)*np.ones((len(new_group_idx),))
+        destination_b = random.randint(-square_dim,square_dim)*np.ones((len(new_group_idx),))
                 
         #Now generate pedestrian target states
         target_states = fill_state(destination_a, destination_b, False, self.box_size)
@@ -1035,63 +1024,55 @@ class ExtdSimulator(psf.Simulator):
     def add_new_group(self): #(TESTED!)
         """This method generate pedestrian states for new group"""
         
-        
         #Immediately brake if there is no space for new groups and dynamic 
         #grouping is not allowed
         
         if not self.__dynamic_grouping:
             if not [] in self.peds.groups:
                 return False
-            
-            
-        
+
         square_dim = self.box_size + 1
         speed_variance_red = 10
-        
+    
         #Initialize new random group size:
-        new_grp_size = np.random.randint(1, self.new_peds_params['max_grp_size'])
-        
+        new_grp_size = random.randint(1, self.new_peds_params['max_grp_size'])
+    
         #Compute side of origin for new pedestrians group
-        group_origin_a = np.random.randint(0,4) #0:left, 1:bottom, 2:right, 3:top
-        
+        group_origin_a = random.randint(0,3) #0:left, 1:bottom, 2:right, 3:top
+    
         #Compute random group width
         group_width = (self.new_peds_params['group_width_max'] - self.new_peds_params['group_width_min'])*\
-            np.random.random_sample() + self.new_peds_params['group_width_min']
-            
+            random.random() + self.new_peds_params['group_width_min']
+
         #Generate group pedestrian position
-        group_origin_b = np.random.randint(-square_dim, square_dim) + group_width*np.random.random_sample(new_grp_size) - group_width/2
-        
+        group_origin_b = random.randint(-square_dim, square_dim) + group_width*np.random.random_sample(new_grp_size) - group_width/2
+    
         #Choose random destination and delete the origin side
-        group_destination_a = np.random.choice(np.delete(np.array([0, 1, 2, 3]), group_origin_a))
-        group_destination_b = np.random.randint(-square_dim,square_dim)*np.ones((new_grp_size,))
-        
+        group_destination_a = random.choice(np.delete(np.array([0, 1, 2, 3]), group_origin_a))
+        group_destination_b = random.randint(-square_dim,square_dim)*np.ones((new_grp_size,))
+
         #Based on group origin and group destination compute the new states of the 
         #new added pedestrians
+    
         origin_states      = fill_state(group_origin_a, group_origin_b, True , self.box_size)
         destination_states = fill_state(group_destination_a, group_destination_b, False, self.box_size)
-        
+    
         #Initialize full state matrix
         new_group_states = np.concatenate( (origin_states, np.zeros(origin_states.shape) , destination_states, self.peds.default_tau*np.ones((origin_states.shape[0],1)) ) , axis = 1)
-        
         # Compute new group desired direction
         new_group_directions = stateutils.desired_directions(new_group_states)[0]
-        
         # Compute new group speed
         random_speeds = np.repeat((self.new_peds_params['average_speed'] + np.random.randn(new_group_directions.shape[0])/speed_variance_red)[np.newaxis,:],2,axis=0).T
-        
         #Fill last state
         new_group_states[:,2:4] = np.multiply(new_group_directions, random_speeds)
-        
         # new group indices
         new_group_states = np.concatenate((self.peds.state,new_group_states),axis = 0)
         new_group = self.peds.size() + np.arange(new_grp_size)
-        
-        
+
         self._stopped_peds = np.concatenate((self._stopped_peds, np.zeros((new_grp_size,), dtype = bool)))
         self._timer_stopped_peds = np.hstack((self._timer_stopped_peds, np.zeros((new_grp_size,))))
         self._last_known_ped_target = np.concatenate((self._last_known_ped_target, np.zeros((new_grp_size, 2))))
-        
-        
+                
         
         groups = self.peds.groups
         if [] in groups:
@@ -1108,19 +1089,21 @@ class ExtdSimulator(psf.Simulator):
             self._stopped_groups = np.hstack((self._stopped_groups, False))
             self._last_known_group_target = np.concatenate((self._last_known_group_target, [[0, 0]]), axis = 0)
             self._timer_stopped_group = np.hstack((self._timer_stopped_group, False))
-            
         
+
         #Now update new pedestrians in the global pedestrians state
         self.peds.update(new_group_states, groups)
         
         return True
+
+
     
     def add_new_individuals(self): #(TESTED!)
         square_dim = self.box_size +1
         speed_variance_red = 10
     
         #Generate random integer representing the new pedestrians to be added
-        new_pedestrians = np.random.randint(1,self.new_peds_params['max_single_peds'])
+        new_pedestrians = random.randint(1,self.new_peds_params['max_single_peds'])
     
         #Initialize empty pedestrian state matrix for the new pedestrians added
         new_pedestrians_states = np.zeros((new_pedestrians, 7))
@@ -1128,11 +1111,11 @@ class ExtdSimulator(psf.Simulator):
     
         for i in range(new_pedestrians):
             # randomly generate origin and destination of new pedestrian
-            origin_a = np.random.randint(0,4) #0:left, 1:bottom, 2:right, 3:top
-            origin_b = 2*square_dim*np.random.random_sample() - square_dim
+            origin_a = random.randint(0,3) #0:left, 1:bottom, 2:right, 3:top
+            origin_b = 2*square_dim*random.random() - square_dim
             
-            destination_a = np.random.choice(np.delete(np.array([0, 1, 2, 3]), origin_a))
-            destination_b = 2*square_dim*np.random.random_sample() - square_dim
+            destination_a = random.choice(np.delete(np.array([0, 1, 2, 3]), origin_a))
+            destination_b = 2*square_dim*random.random() - square_dim
             
             # fill i-th row of the list of new pedestrian states
             new_pedestrians_states[i,:2] = fill_state(origin_a, origin_b, True, self.box_size)
@@ -1311,13 +1294,13 @@ class ExtdSimulator(psf.Simulator):
                     #generate group target for grouped peds
                     if group:
                         group_destination_a = random.choice([0,1,2,3])
-                        group_destination_b = np.random.randint(-(self.box_size +1),self.box_size +1)*np.ones((len(group),))
+                        group_destination_b = random.randint(-(self.box_size +1),self.box_size +1)*np.ones((len(group),))
                         
                         #Initial speed
                         dot_x_0 = 0.5 #Module
                         
                         #random angle
-                        angle = np.random.uniform(-np.pi, np.pi)
+                        angle = random.uniform(-np.pi, np.pi)
                         dot_x_x = dot_x_0*np.cos(angle)
                         dot_x_y = dot_x_0*np.sin(angle)
         
@@ -1367,7 +1350,7 @@ class ExtdSimulator(psf.Simulator):
                         state[i, 4:6] = destination_state
                         
                         dot_x_0 = 0.5
-                        angle = np.random.uniform(-np.pi, np.pi)
+                        angle = random.uniform(-np.pi, np.pi)
                         
                         dot_x_x = dot_x_0*np.cos(angle)
                         dot_x_y = dot_x_0*np.sin(angle)

@@ -12,14 +12,20 @@ import random
 import matplotlib.pyplot as plt
 
 
+def clip(x, min, max):
+    if( min > max ) :  return x    
+    elif( x < min ) :  return min
+    elif( x > max ) :  return max
+    else :             return x
+
 
 class Polygon:
     def __init__(self,n_vert = 5, irregularity=0,spikeness=0,normalized_in = True, radius = 1):
         self.n_vertex = n_vert
         self.normalized = normalized_in
         self.num_edges = n_vert
-        self.irregularity = np.clip(irregularity, 0,1 ) * 2*math.pi / self.n_vertex
-        self.spikeness = np.clip( spikeness, 0,1 ) * radius
+        self.irregularity = clip(irregularity, 0,1 ) * 2*math.pi / self.n_vertex
+        self.spikeness = clip( spikeness, 0,1 ) * radius
         self.vertex = None
         self.edges = None
         self.centre = np.zeros((1,2))
@@ -56,7 +62,7 @@ class Polygon:
         points = []
         angle = random.uniform(0, 2*math.pi)
         for i in range(self.n_vertex) :
-            r_i = np.clip( random.gauss(self.radius, self.spikeness), 0, self.radius )
+            r_i = clip( random.gauss(self.radius, self.spikeness), 0, self.radius )
             x = r_i*math.cos(angle)
             y = r_i*math.sin(angle)
             points.append( (x,y) )    
