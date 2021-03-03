@@ -11,6 +11,10 @@ from pysocialforce.utils import stateutils
 import matplotlib.pyplot as plt
 
 
+
+def linspace(a,b,n):
+    return a+(b-a)*np.arange(n)/(n-1)
+
 #####################################
 # functions used to change directions
 

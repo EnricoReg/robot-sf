@@ -25,6 +25,22 @@ import numpy as np
 
 #%%
 
+def normalize(vecs):
+    """Normalize nx2 array along the second axis
+    input: [n,2] ndarray
+    output: (normalized vectors, norm factors)
+    """
+    
+    #with CodeTimer('new'):
+    norm_factors = np.linalg.norm(vecs, axis = 1)
+    normalized = vecs/(norm_factors[:,np.newaxis]+1e-8)
+    
+    return normalized, norm_factors
+
+
+
+#%%
+
 class DesiredForce(forces.Force):
     """Calculates the force between this agent and the next assigned waypoint.
     If the waypoint has been reached, the next waypoint in the list will be
@@ -55,7 +71,7 @@ class DesiredForce(forces.Force):
         vel = self.peds.vel()
         goal = self.peds.goal()
         
-        direction, dist = stateutils.normalize(goal - pos)
+        direction, dist = normalize(goal - pos)
         ### in the following, direction is changed if obstacle is detected
 
         #####
@@ -102,7 +118,7 @@ class GroupRepulsiveForce(forces.Force):
                 size = len(group)
                 member_pos = self.peds.pos()[group, :]
                 diff = stateutils.each_diff(member_pos)  # others - self
-                _, norms = stateutils.normalize(diff)
+                _, norms = normalize(diff)
                 diff[norms > threshold, :] = 0
                 # forces[group, :] += np.sum(diff, axis=0)
                 try: #try except has been added (only difference)

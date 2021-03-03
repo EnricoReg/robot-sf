@@ -8,7 +8,9 @@ from PIL import Image
 #%%
 
 from .extenders_py_sf.extender_sim import ExtdSimulator
+from .utils.utilities import linspace
 
+#%%
 class BinaryOccupancyGrid():
     """The class is responsible of creating an object representing a discrete map of the environment"""
     def __init__(self, map_height = 1, map_length = 1, map_resolution = 10, peds_sim_env = None):
@@ -36,26 +38,14 @@ class BinaryOccupancyGrid():
         self.cell_size['x'] = self.map_length/(self.grid_size['x'])
         self.cell_size['y'] = self.map_height/(self.grid_size['y'])
 
-        x = np.linspace(0 + self.cell_size['x']/2, self.map_length - self.cell_size['x']/2, self.grid_size['x'])
-        y = np.linspace(0 + self.cell_size['y']/2, self.map_height - self.cell_size['y']/2, self.grid_size['y'])
-        #x = np.linspace(-self.map_length/2 + self.cell_size['x']/2, self.map_length/2 - self.cell_size['x']/2, self.grid_size['x'])
-        #y = np.linspace(-self.map_height/2 + self.cell_size['y']/2, self.map_height/2 - self.cell_size['y']/2, self.grid_size['y'])
+        x = linspace(0 + self.cell_size['x']/2, self.map_length - self.cell_size['x']/2, self.grid_size['x'])
+        y = linspace(0 + self.cell_size['y']/2, self.map_height - self.cell_size['y']/2, self.grid_size['y'])
         y = np.flip(y)
-
-        # #Initializing matrices
-        # self.X = np.zeros((self.grid_size['y'], self.grid_size['x']))
-        # for i in range(self.X.shape[0]):
-        #     self.X[i,:] = x
-
-        # self.Y = np.zeros((self.grid_size['y'], self.grid_size['x']))
-        # for i in range(self.Y.shape[1]):
-        #     self.Y[:,i] = y
         
         self.X,self.Y = np.meshgrid(x,y);
         
         self.min_val = np.array( [self.X[0,0] - self.cell_size['x']/2 ,  self.Y[-1,0] - self.cell_size['y']/2 ])
         self.max_val = np.array([  self.X[0,-1] + self.cell_size['x']/2 ,   self.Y[0,0] + self.cell_size['y']/2 ])
-        
         
         self.Occupancy = np.zeros((self.grid_size['y'],self.grid_size['x']), dtype = bool)
         self.OccupancyRaw = self.Occupancy.copy()
@@ -261,7 +251,7 @@ class BinaryOccupancyGrid():
             return idx_start
         elif d_row == 0 and not d_col == 0:
             #Handle division by zero
-            col_idx = np.linspace(idx_start[0,0],idx_end[0,0],d_col + 1, dtype = int)
+            col_idx = linspace(idx_start[0,0],idx_end[0,0],d_col + 1)
             tmp = np.ones((col_idx.shape[0],2), dtype = int)
             tmp[:,1] = idx_end[0,1]*tmp[:,1]
             tmp[:,0] = col_idx
@@ -275,11 +265,11 @@ class BinaryOccupancyGrid():
             #Get indexes of intercepting ray
             
             if abs(m) <= 1:
-                x = np.linspace(idx_start[0,1], idx_end[0,1], d_row + 1).astype(int) #columns index
+                x = linspace(idx_start[0,1], idx_end[0,1], d_row + 1).astype(int) #columns index
                 y = np.floor(m*(x - idx_start[0,1]) + idx_start[0,0]).astype(int)
                 y[y>self.Occupancy.shape[0]-1] = self.Occupancy.shape[0]-1
             elif abs(m) > 1:
-                y = np.linspace(idx_start[0,0], idx_end[0,0],d_col + 1).astype(int) #rows index
+                y = linspace(idx_start[0,0], idx_end[0,0],d_col + 1).astype(int) #rows index
                 x = np.floor((y - idx_start[0,0])/m + idx_start[0,1]).astype(int)
                 x[x>self.Occupancy.shape[1]-1] = self.Occupancy.shape[1]-1
 
@@ -296,16 +286,13 @@ class BinaryOccupancyGrid():
         #Input ray must be the output of the previous function!
         #so a (m,2) numpy array of ints
         
-        #general occupancy
-        
-        for i in range(ray_indexes.shape[0]):
-            #start check occupancy matrix
-            if self.OccupancyOverall[ray_indexes[i,0],ray_indexes[i,1]] == True:
-
-                return True, ray_indexes[i,:] , \
-                    [self.X[0,ray_indexes[i,1]], self.Y[ray_indexes[i,0],0]]
-
-        return False,None, None
+        intersections = self.OccupancyOverall[ray_indexes[:,0],ray_indexes[:,1]]
+        if intersections.any():
+            idx = np.where(intersections)[0][0]
+            return  True, ray_indexes[idx,:],  [self.X[0,ray_indexes[idx,1]], self.Y[ray_indexes[idx,0],0]]
+        return (False,None, None)
+    
+    
 
     def insertScan(self,scan, pose):
         ''' This method adds occupied value to the occupancy matrix
@@ -324,10 +311,7 @@ class BinaryOccupancyGrid():
         if not self.check_if_valid_world_coordinates([pose[0], pose[1]]).any() :
             raise ValueError('Pose not in map!')
 
-
-
         return False
-
 
 
 
@@ -344,47 +328,27 @@ class BinaryOccupancyGrid():
             self.Occupancy = fill_surrounding(self.Occupancy,int_radius_step,eval_points, add_noise = self.add_noise)
             self.updateOverallOccupancy()
                         
-        """
-            for i in range(self.OccupancyFixed.shape[0]):
-                for j in range(self.OccupancyFixed.shape[1]):
-                    if self.OccupancyFixed[i,j]:
-                        tmp = fill_surrounding(tmp,int_radius_step,i,j)
-                        #Find neighbours indexes inside the given radius
-                        #and assign them occupied value
-            self.OccupancyFixed =  tmp
-        else:
-            tmp = self.Occupancy.copy()
-            for i in range(self.Occupancy.shape[0]):
-                for j in range(self.Occupancy.shape[1]):
-                    if self.Occupancy[i,j]:
-                        tmp = fill_surrounding(tmp,int_radius_step,i,j)
-                        #Find neighbours indexes inside the given radius
-                        #and assign them occupied value
-            self.Occupancy =  tmp
-        """
+
 
     def check_if_valid_world_coordinates(self,pair, margin = 0):
+
         if isinstance(pair,list):
             pair = np.array(pair)
             
         if len(pair.shape)<2:
             pair = pair[np.newaxis,:]
-            
-        #for i in range(pair.shape[0]):
-        #    if pair[i,0] < self.X[0,0] - self.cell_size['x']/2 or pair[i,0] > self.X[0,-1] + self.cell_size['x']/2 \
-        #       or pair[i,1] < self.Y[-1,0] - self.cell_size['y']/2 or pair[i,1] > self.Y[0,0] + self.cell_size['y']/2:
-        #        return False
-        
-        offset_x = self.map_length*margin
-        offset_y = self.map_height*margin
-        offset = np.array([offset_x, offset_y])
+    
+        offset = margin*np.array([self.map_length, self.map_height])
 
         valid_pairs = np.bitwise_and( (pair >= (self.min_val + offset)).all(axis = 1) , (pair <= (self.max_val - offset)).all(axis = 1) )
-
-        if valid_pairs.any():
+        if valid_pairs.all():
+            return pair
+        elif valid_pairs.any():
             return pair[valid_pairs,:]
         else:
             return np.array(False)
+
+
 
     def check_if_valid_grid_index(self,pair):
         for i in range(pair.shape[0]):
@@ -396,8 +360,8 @@ class BinaryOccupancyGrid():
     def convert_world_to_grid(self,pair):
         
         pair = self.check_if_valid_world_coordinates(pair)
-        if not pair.any():
-            raise ValueError('Invalid world coordinates with the current map!')
+        #if not pair.any():
+        #    raise ValueError('Invalid world coordinates with the current map!')
         return self.convert_world_to_grid_no_error(pair)
 
     def convert_grid_to_world(self,pair):
@@ -481,10 +445,8 @@ class BinaryOccupancyGrid():
         self.cell_size['x'] = self.map_length/(self.grid_size['x'])
         self.cell_size['y'] = self.map_height/(self.grid_size['y'])
 
-        x = np.linspace(0 + self.cell_size['x']/2, self.map_length - self.cell_size['x']/2, self.grid_size['x'])
-        y = np.linspace(0 + self.cell_size['y']/2, self.map_height - self.cell_size['y']/2, self.grid_size['y'])
-        #x = np.linspace(-self.map_length/2 + self.cell_size['x']/2, self.map_length/2 - self.cell_size['x']/2, self.grid_size['x'])
-        #y = np.linspace(-self.map_height/2 + self.cell_size['y']/2, self.map_height/2 - self.cell_size['y']/2, self.grid_size['y'])
+        x = linspace(0 + self.cell_size['x']/2, self.map_length - self.cell_size['x']/2, self.grid_size['x'])
+        y = linspace(0 + self.cell_size['y']/2, self.map_height - self.cell_size['y']/2, self.grid_size['y'])
         y = np.flip(y)
 
         #Initializing matrices
