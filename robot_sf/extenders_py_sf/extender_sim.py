@@ -1311,6 +1311,7 @@ class ExtdSimulator(psf.Simulator):
                         state[group, 2:4] = [dot_x_x, dot_x_y]
                 
                 #Check for state validity
+                obs_recreated = Polygon()
             for i in range(n_peds):
                 #Check if initial position is valid
                 state[i, :2] = np.random.uniform(-self.box_size, self.box_size, (1,2))
@@ -1320,7 +1321,7 @@ class ExtdSimulator(psf.Simulator):
                         
                     for iter_num, ob in enumerate(map_structure['Obstacles'].keys()):
                             #Compute safety radius for each obstacle
-                        obs_recreated = Polygon()
+
                         obs_recreated.load(map_structure['Obstacles'][ob]['Vertex'])
                         
                         vert = np.array(map_structure['Obstacles'][ob]['Vertex'])
