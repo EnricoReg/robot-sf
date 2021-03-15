@@ -321,6 +321,15 @@ class ExtdSimulator(psf.Simulator):
         self.active_peds_update()
         # re-initialize forces
         self.forces = self.make_forces(self.config)
+        
+        
+    def setPedSparsity(self,new_ped_sparsity):
+        """ This method override default ped sparsity with a newly defined one 
+            and update the related variables"""
+        self.peds_sparsity = new_ped_sparsity
+        self.max_population_for_new_group = int(self.av_max_people - round((self.new_peds_params['max_grp_size']+2)/2) )
+        self.max_population_for_new_individual = self.max_population_for_new_group - (1+self.new_peds_params['max_single_peds'])
+            
             
 
     def getNotGroupedPedestrianIndexes(self): #(TESTED !!)
