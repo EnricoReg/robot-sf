@@ -90,12 +90,9 @@ class ExtdSimulator(psf.Simulator):
         self.robot['orient'] = []
         
         
-        
         """Parameters for the addition of new agents"""
         self.new_peds_params = dict()
         
-        
-    
         
         state, groups, obstacles = self.loadConfig(path_to_filename=path_to_config)
         
@@ -123,23 +120,8 @@ class ExtdSimulator(psf.Simulator):
         #self.current_groups = self.get_pedestrians_groups()
         self.active_peds_update()
         
-        
-        
-        
-        
-        
-        
-        
-        #print(self.box_size)
-        #print(self.peds_sparsity)
-        
-        
-        self.av_max_people = round((2*self.box_size)**2 / self.peds_sparsity)
-            
-        self.max_population_for_new_group = int(self.av_max_people - round((self.new_peds_params['max_grp_size']+2)/2) )
-        self.max_population_for_new_individual = self.max_population_for_new_group - (1+self.new_peds_params['max_single_peds'])
-        
-        
+        self.setPedSparsity()
+       
         
         """ Memory for pedestrians and groups target direction """
         #Initialize check for stopped group of pedestrians status
@@ -201,8 +183,6 @@ class ExtdSimulator(psf.Simulator):
         
         if self.__enable_max_steps_stop:
             self.__unfreezeExceedingLimits()
-        
-        
         
         
     
@@ -323,15 +303,17 @@ class ExtdSimulator(psf.Simulator):
         self.forces = self.make_forces(self.config)
         
         
-    def setPedSparsity(self,new_ped_sparsity):
-        """ This method override default ped sparsity with a newly defined one 
-            and update the related variables"""
-        self.peds_sparsity = new_ped_sparsity
-        
+    def setPedSparsity(self,new_ped_sparsity=None):
+        """ This method updates the variables related to peds sparsity. If arg is given, overrides default value"""
+            
+        if new_ped_sparsity is not None:
+            self.peds_sparsity = new_ped_sparsity
+
         self.av_max_people = round((2*self.box_size)**2 / self.peds_sparsity)
+
         self.max_population_for_new_group = int(self.av_max_people - round((self.new_peds_params['max_grp_size']+2)/2) )
         self.max_population_for_new_individual = self.max_population_for_new_group - (1+self.new_peds_params['max_single_peds'])
-            
+        
             
 
     def getNotGroupedPedestrianIndexes(self): #(TESTED !!)

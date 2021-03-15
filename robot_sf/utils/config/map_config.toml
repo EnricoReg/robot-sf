@@ -35,7 +35,7 @@ probabilities = [ 20, 20, 10, 50,]
 
 [simulator.group_actions]
 actions = [ "split", "merge", "group_standalone", "none",]
-probabilities = [ 10, 10, 30, 50,]
+probabilities = [ 5, 1, 9, 85,]
 
 [simulator.stopping]
 actions = [ "stop_pedestrian", "stop_group", "move_pedestrian", "move_group", "none",]
