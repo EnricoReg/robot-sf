@@ -214,6 +214,45 @@ class DifferentialDrive():
         world_coords_peds = self.map.convert_grid_to_world(idxs_peds)
         
         return np.sqrt(np.sum((world_coords_peds - self.getCurrentPosition()[:2])**2, axis = 1))
+    
+    
+    def getPedsDistancesAndAngles(self):
+        # returns vector with distances of all pedestrians from robot    
+        idx_x, idx_y = np.where( self.map.OccupancyRaw == True)
+        idxs_peds = np.concatenate( ( idx_x[:,np.newaxis] , idx_y[:,np.newaxis]  ) , axis = 1)
+        
+        
+        
+        world_coords_peds = self.map.convert_grid_to_world(idxs_peds)
+        
+        #Compute angles
+        
+        
+        dst =  np.sqrt(np.sum((world_coords_peds - self.getCurrentPosition()[:2])**2, axis = 1))
+        
+        pos = self.getCurrentPosition()
+        
+        alphas = np.arctan2(world_coords_peds[:,1] - pos[1], world_coords_peds[:,0] - pos[0]) - pos[2]
+        
+        alphas = wrap2pi(alphas)
+        return list(zip(alphas, dst))
+    
+    
+    def chunk(self, n_sections):
+        data = self.getPedsDistancesAndAngles()
+        
+        section = np.linspace(-np.pi,np.pi, n_sections+1)
+        sector_id = np.linspace(0,n_sections-1,n_sections)
+        distances = len(sector_id)*[self.scanner.range[1]]
+        
+        for i in range(len(data)):
+            for j in range(len(sector_id)):
+                if data[i][0] >= section[j] and data[i][0] <= section[j+1]:
+                    if data[i][1] < distances[j]:
+                        distances[j] = data[i][1]
+                        break
+         
+        return distances
 
     def updateRobotOccupancy(self):
         # internal update only uses attribut collision distance
