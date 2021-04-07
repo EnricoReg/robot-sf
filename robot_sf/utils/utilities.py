@@ -15,6 +15,12 @@ import matplotlib.pyplot as plt
 def linspace(a,b,n):
     return a+(b-a)*np.arange(n)/(n-1)
 
+def wrap2pi(angles):
+    
+    new_angles = (angles + np.pi) % (2*np.pi) -np.pi
+    
+    return new_angles
+
 #####################################
 # functions used to change directions
 
