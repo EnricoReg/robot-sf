@@ -89,6 +89,6 @@ obstacle1 = [ [ -1.0, 1.0, -1.0, -1.0,], [ 1.0, 1.0, -1.0, 2.5,], [ 1.0, -1.0, 2
 obstacle2 = [ [ -7, -5, -7, -7,], [ -7, -7, -7, -3,], [ -7, -5, -3, -7,],]
 
 [simulator.custom.random_population]
-max_initial_peds = 20
+max_initial_peds = [0, 2, 5, 10, 15, 20]
 max_initial_groups = 7
 max_peds_per_group = 3
