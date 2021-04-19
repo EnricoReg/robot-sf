@@ -36,10 +36,10 @@ from ..utils.poly import Polygon
 #%%Simulator Class Definition
 # extension of Class "Simulator"
 class ExtdSimulator(psf.Simulator):
-    def __init__(self,config_file=None, path_to_config = None):
+    def __init__(self,config_file=None, path_to_config = None, difficulty = 0):
         
         self.tmp = None
-        
+        self.difficulty = difficulty #Added difficulty
         self.box_size = None   #Implemented in load config
         self.peds_sparsity = None    #average min m^2 per person #Implemented in load config
         
@@ -1261,7 +1261,7 @@ class ExtdSimulator(psf.Simulator):
                 
                 
             else:
-                n_peds = data['simulator']['custom']['random_population']['max_initial_peds']
+                n_peds = data['simulator']['custom']['random_population']['max_initial_peds'][self.difficulty]
                 index_list = np.arange(n_peds).tolist() #Available index to group
                 
                 #initialize state matrix
