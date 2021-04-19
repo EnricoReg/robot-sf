@@ -176,7 +176,10 @@ class ExtdSimulator(psf.Simulator):
         if self.update_peds:
             self.update_peds_on_scene()
             # only now perform step...
-        forces = self.compute_forces()    
+        if self.current_positions.shape[0] > 0:
+            forces = self.compute_forces()    
+        else:
+            forces = 0
         self.peds.step(forces)
         
         self.__updateStoppingTime()

@@ -188,7 +188,7 @@ class BinaryOccupancyGrid():
             pair = self.check_if_valid_world_coordinates(pair)
             
             if not pair.any():
-                print(f'Invalid world coordinates with the current map! {pair}')
+                #print(f'Invalid world coordinates with the current map! {pair}')
                 return None
                #raise ValueError('Invalid world coordinates with the current map!')
 
