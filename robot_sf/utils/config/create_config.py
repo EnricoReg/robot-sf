@@ -110,7 +110,7 @@ if __name__ == '__main__':
     tmp['simulator']['custom']['map_number'] = 6#
     tmp['simulator']['custom']['ped_sparsity'] = 15#
     tmp['simulator']['custom']['random_population'] = dict()
-    tmp['simulator']['custom']['random_population']['max_initial_peds'] = 20
+    tmp['simulator']['custom']['random_population']['max_initial_peds'] = [0, 2, 5, 10, 15, 20]
     tmp['simulator']['custom']['random_population']['max_initial_groups'] = 7
     tmp['simulator']['custom']['random_population']['max_peds_per_group'] = 3
     
