@@ -221,16 +221,12 @@ class DifferentialDrive():
         idx_x, idx_y = np.where( self.map.OccupancyRaw == True)
         idxs_peds = np.concatenate( ( idx_x[:,np.newaxis] , idx_y[:,np.newaxis]  ) , axis = 1)
         
-        
-        
         world_coords_peds = self.map.convert_grid_to_world(idxs_peds)
         
         #Compute angles
         
-        
-        dst =  np.sqrt(np.sum((world_coords_peds - self.getCurrentPosition()[:2])**2, axis = 1))
-        
         pos = self.getCurrentPosition()
+        dst =  np.sqrt(np.sum((world_coords_peds - pos[:2])**2, axis = 1))
         
         alphas = np.arctan2(world_coords_peds[:,1] - pos[1], world_coords_peds[:,0] - pos[0]) - pos[2]
         
@@ -316,14 +312,10 @@ class DifferentialDrive():
         
         dist  = np.linalg.norm(target_coordinates - np.array([x0,y0]))
         
-        #@xl_func("numpy_row v1, numpy_row v2: float")
-        def py_ang(v1, v2):
-            """ Returns the angle in radians between vectors 'v1' and 'v2'    """
-            cosang = np.dot(v1, v2)
-            sinang = np.linalg.norm(np.cross(v1, v2))
-            return np.arctan2(sinang, cosang)
-        
-        angle = py_ang(target_coordinates , np.array([x0,y0]))
+        angl_tmp = np.arctan2(target_coordinates[1]-y0, target_coordinates[0]-x0)
+        angl_corrected = angl_tmp - self.current_pose['orientation']['z']
+
+        angle = wrap2pi(angl_corrected )
         
         return dist, angle
 
