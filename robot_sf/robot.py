@@ -78,21 +78,26 @@ class DifferentialDrive():
     def setMaxSpeed(self, linear, angular):
         self.max_linear_speed = linear
         self.max_angular_speed = angular
+        
 
     def getWheelsSpeed(self):
         return self.wheels_speed
 
+
     def printMaxSpeed(self):
         print('Robot''s max linear speed is: ' + str(self.max_linear_speed))
         print('Robot''s max angular speed is: ' + str(self.max_angular_speed))
+
             
     def getMaxSpeed(self):
         return self.max_linear_speed, self.max_angular_speed
+
 
     def stop(self):
         for key in self.current_speed.keys():
             for sub_key in self.current_speed[key].keys():
                 self.current_speed[key][sub_key] = 0
+
 
     def setPosition(self, x, y, orient):
         self.current_pose['position']['x'] = x
@@ -101,7 +106,6 @@ class DifferentialDrive():
         self.last_pose = self.current_pose
         self.clearOldvar()
         self.updateRobotOccupancy()
-        
 
 
     def updateRobotSpeed(self, dot_x, dot_orient):
@@ -214,41 +218,47 @@ class DifferentialDrive():
         world_coords_peds = self.map.convert_grid_to_world(idxs_peds)
         
         return np.sqrt(np.sum((world_coords_peds - self.getCurrentPosition()[:2])**2, axis = 1))
-    
-    
-    def getPedsDistancesAndAngles(self):
+
+
+    def getDistancesAndAngles(self, peds_only = False):
         # returns vector with distances of all pedestrians from robot    
-        idx_x, idx_y = np.where( self.map.OccupancyRaw == True)
-        idxs_peds = np.concatenate( ( idx_x[:,np.newaxis] , idx_y[:,np.newaxis]  ) , axis = 1)
+        if peds_only:
+            idx_x, idx_y = np.where( self.map.OccupancyRaw  )
+        else:
+            idx_x, idx_y = np.where( np.logical_or(self.map.OccupancyRaw , self.map.OccupancyFixedRaw ) )
+
+        idxs_objs = np.concatenate( ( idx_x[:,np.newaxis] , idx_y[:,np.newaxis]  ) , axis = 1)
         
-        world_coords_peds = self.map.convert_grid_to_world(idxs_peds)
+        world_coords_objs = self.map.convert_grid_to_world(idxs_objs)
         
         #Compute angles
         
         pos = self.getCurrentPosition()
-        dst =  np.sqrt(np.sum((world_coords_peds - pos[:2])**2, axis = 1))
+        dst =  np.sqrt(np.sum((world_coords_objs - pos[:2])**2, axis = 1))
         
-        alphas = np.arctan2(world_coords_peds[:,1] - pos[1], world_coords_peds[:,0] - pos[0]) - pos[2]
+        alphas = np.arctan2(world_coords_objs[:,1] - pos[1], world_coords_objs[:,0] - pos[0]) - pos[2]
         
         alphas = wrap2pi(alphas)
-        return list(zip(alphas, dst))
+        
+        return (alphas, dst) #list(zip(alphas, dst))
     
     
-    def chunk(self, n_sections):
-        data = self.getPedsDistancesAndAngles()
+    def chunk(self, n_sections, peds_only = False):
+        alphas, dst = self.getDistancesAndAngles(peds_only)
         
-        section = np.linspace(-np.pi,np.pi, n_sections+1)
-        sector_id = np.linspace(0,n_sections-1,n_sections)
-        distances = len(sector_id)*[self.scanner.range[1]]
+        #section = np.linspace(-np.pi,np.pi, n_sections+1)
+        bins = np.pi*(2*np.arange(0,n_sections+1)/n_sections-1)
+        sector_id = np.arange(0,n_sections-1)
+        distances = n_sections*[1.]
+
+        inds = np.digitize(alphas, bins)
         
-        for i in range(len(data)):
-            for j in range(len(sector_id)):
-                if data[i][0] >= section[j] and data[i][0] <= section[j+1]:
-                    if data[i][1] < distances[j]:
-                        distances[j] = data[i][1]
-                        break
-         
+        for j in range(len(sector_id)):
+            if j in inds:
+                distances[j] = min(1.0,round(min(dst[np.where(inds == j)])/self.scanner.range[1],2))
+
         return distances
+    
 
     def updateRobotOccupancy(self):
         # internal update only uses attribut collision distance
@@ -331,7 +341,6 @@ class DifferentialDrive():
             key_list = list(self.scan_list_history.keys())  #edited: in Python3 'dict_keys' object are not subscriptable
             name = 'scan_'+ str(int(key_list[-1].replace('scan_','')) + 1)
             self.scan_list_history[name] = scan
-
 
 
 

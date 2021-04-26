@@ -50,6 +50,7 @@ class BinaryOccupancyGrid():
         self.Occupancy = np.zeros((self.grid_size['y'],self.grid_size['x']), dtype = bool)
         self.OccupancyRaw = self.Occupancy.copy()
         self.OccupancyFixed = self.Occupancy.copy()
+        self.OccupancyFixedRaw = self.Occupancy.copy()
         self.OccupancyOverall = self.Occupancy.copy()
 
         self.grid_origin = [0,0]
@@ -364,6 +365,7 @@ class BinaryOccupancyGrid():
         #    raise ValueError('Invalid world coordinates with the current map!')
         return self.convert_world_to_grid_no_error(pair)
 
+
     def convert_grid_to_world(self,pair):
         if not self.check_if_valid_grid_index(pair):
             raise ValueError('Invalid grid indices with the current map!')
@@ -373,6 +375,7 @@ class BinaryOccupancyGrid():
             val[i,1] = self.Y[pair[i,0],0]
 
         return val
+
 
     def convert_world_to_grid_no_error(self,pair):
         return np.concatenate((np.abs(self.Y[:,0][:,np.newaxis] - pair[:,1].T).argmin(axis = 0)[:,np.newaxis], \
@@ -394,7 +397,10 @@ class BinaryOccupancyGrid():
             new_obs_coordinates = obs_coordinates + np.ones((obs_coordinates.shape[0],2))*maps_alignment_offset
             # reset occupancy map
             self.OccupancyFixed = np.zeros(self.OccupancyFixed.shape,dtype = bool)
-            self.setOccupancy(new_obs_coordinates, np.ones((obs_coordinates.shape[0],1),dtype = bool), fixedObjectsMap = fixedObjectsMap)            
+            self.setOccupancy(new_obs_coordinates, np.ones((obs_coordinates.shape[0],1),dtype = bool), fixedObjectsMap = fixedObjectsMap)   
+            zeros_mat = np.zeros(self.OccupancyFixed.shape, dtype = bool)
+            zeros_mat[::2,::2]=True
+            self.OccupancyFixedRaw = np.logical_and(self.OccupancyFixed.copy(), zeros_mat)
             self.inflate(.3, fixedObjectsMap=fixedObjectsMap)
         else:
             # get peds states
@@ -409,6 +415,7 @@ class BinaryOccupancyGrid():
             self.OccupancyRaw =self.Occupancy.copy()
             self.inflate(.4) # inflate pedestrians only
 
+
     def move_map_frame(self,new_position):
         ''' This method will change the position of the grid 
             origin. By default when constructing '''
@@ -421,6 +428,7 @@ class BinaryOccupancyGrid():
         
         self.min_val = np.array( [self.X[0,0] - self.cell_size['x']/2 ,  self.Y[-1,0] - self.cell_size['y']/2 ])
         self.max_val = np.array([  self.X[0,-1] + self.cell_size['x']/2 ,   self.Y[0,0] + self.cell_size['y']/2 ])
+        
         
     def center_map_frame(self):
         self.move_map_frame([self.map_length/2,self.map_height/2])
