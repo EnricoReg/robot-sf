@@ -205,6 +205,10 @@ class BinaryOccupancyGrid():
                 self.OccupancyFixed[idx[i,0],idx[i,1]] = val[i]
                 
             self.getObstaclesCoordinates()
+            self.OccupancyFixed[:,0] = True
+            self.OccupancyFixed[:,-1] = True
+            self.OccupancyFixed[0,:] = True
+            self.OccupancyFixed[-1,:] = True
             self.OccupancyOverall = self.OccupancyFixed
         else:
             for i in range(idx.shape[0]):
