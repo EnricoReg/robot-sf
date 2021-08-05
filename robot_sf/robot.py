@@ -316,14 +316,19 @@ class DifferentialDrive():
         return False
     
 
-    def target_rel_position(self, target_coordinates):
-        x0 = self.current_pose['position']['x']
-        y0 = self.current_pose['position']['y']
+    def target_rel_position(self, target_coordinates, current_pose = None):
+        
+        if current_pose is None:
+            x0 = self.current_pose['position']['x']
+            y0 = self.current_pose['position']['y']
+            theta0 = self.current_pose['orientation']['z']
+        else:
+            x0,y0, theta0 = current_pose
         
         dist  = np.linalg.norm(target_coordinates - np.array([x0,y0]))
         
         angl_tmp = np.arctan2(target_coordinates[1]-y0, target_coordinates[0]-x0)
-        angl_corrected = angl_tmp - self.current_pose['orientation']['z']
+        angl_corrected = angl_tmp - theta0
 
         angle = wrap2pi(angl_corrected )
         
