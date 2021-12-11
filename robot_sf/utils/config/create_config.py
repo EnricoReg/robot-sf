@@ -113,6 +113,12 @@ if __name__ == '__main__':
     tmp['simulator']['custom']['random_population']['max_initial_peds'] = [0, 2, 5, 10, 15, 20]
     tmp['simulator']['custom']['random_population']['max_initial_groups'] = 7
     tmp['simulator']['custom']['random_population']['max_peds_per_group'] = 3
+
+    tmp['simulator']['robot'] = dict()
+    tmp['simulator']['robot']['robot_radius'] = 1
+    tmp['simulator']['robot']['activation_threshold'] = 0.5
+    tmp['simulator']['flags']['activate_ped_robot_force'] = True
+    tmp['simulator']['robot']['force_multiplier'] = 1.5
     
     
     

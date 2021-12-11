@@ -31,7 +31,7 @@ class LiDARscanner():
             if not angle_opening.shape[0] == 2:
                 raise ValueError('Input argument for angle_opening must be of size 2')
         
-
+    
         self.range = scan_range
         self.angle_opening = angle_opening
         self.angle_increment = angle_increment
@@ -61,7 +61,7 @@ class LiDARscanner():
         and an input map (map object) and returns a data structure
         containing the sensor readings'''
         self.emptyScanStructure()
-
+        print(self.counter)
         start_pt = [x,y]
         self.scan_structure['data']['pose'] = [x,y,orient]
 

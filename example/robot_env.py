@@ -72,10 +72,12 @@ class RobotEnv(gym.Env):
                  collision_distance = 0.7, visualization_angle_portion = 0.5, lidar_range = 10,\
                  v_linear_max = 1 , v_angular_max = 1 , rewards = [1,100,40], max_v_x_delta = .5, \
                  initial_margin = .3,    max_v_rot_delta = .5, dt = None, normalize_obs_state = True, \
-                     sim_length = 200, difficulty = 0, scan_noise = [0.005,0.002], n_chunk_sections = 18):
+                     sim_length = 200, difficulty = 0, scan_noise = [0.005,0.002], n_chunk_sections = 18, peds_speed_mult = 1.3):
 
         self.n_chunk_sections = n_chunk_sections
         sparsity_levels = [500, 200 , 100,  50 , 20 ]
+
+        self.peds_speed_mult = peds_speed_mult
         
         self.peds_sparsity = sparsity_levels[difficulty]
         self._difficulty = difficulty
@@ -157,10 +159,13 @@ class RobotEnv(gym.Env):
 
     #####################################################################################################            
     def step(self,action, *args):
-        
+        #print('Current peds speed multiplier is:\t%2.2f'%self.robot.map.peds_sim_env.peds.max_speed_multiplier)
         info = {}
         saturate_input = False
-        
+
+        self.robot.map.peds_sim_env.addRobot(self.robot.getCurrentPosition())
+
+
         # initial distance
         dist_0 = self.robot.target_rel_position(self.target_coordinates[:2])[0]
         
@@ -290,6 +295,10 @@ class RobotEnv(gym.Env):
         # if step time externally defined, align peds sim env
         if self.dt != self.robot.map.peds_sim_env.peds.step_width:
             self.robot.map.peds_sim_env.peds.step_width = self.dt
+
+
+        if self.peds_speed_mult != self.robot.map.peds_sim_env.peds.max_speed_multiplier:
+            self.robot.map.peds_sim_env.peds.max_speed_multiplier = self.peds_speed_mult
         
         return self._get_obs()
         
@@ -532,9 +541,16 @@ if __name__ == "__main__":
     pr = cProfile.Profile()
     pr.enable()
     
-    env = RobotEnv()
-    # env.step([1,1])
-    # env.render(mode='animation')
+    env = RobotEnv(difficulty=2)
+    env.reset()
+    print(env.robot.map.peds_sim_env.max_population_for_new_individual)
+    print(env.robot.map.peds_sim_env.max_population_for_new_group)
+    for i in range(600):
+        print(env.robot.map.peds_sim_env.peds.size())
+        env.step([0,0])
+
+    env.robot.map.peds_sim_env.peds.ped_states
+    env.render(mode = 'plot').show()
     
     #turn(50,0.1,0.01) #Turn left
     #turn(50,0.1,-0.02) #Turn right
@@ -543,7 +559,7 @@ if __name__ == "__main__":
     #goStraight(50,0.1,np.pi/2) #Go straight to the top
     #turn(30,0.1,0.02)
     
-    s_like_path()
+    #s_like_path()
     
     pr.disable()
     s = io.StringIO()

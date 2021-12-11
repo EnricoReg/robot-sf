@@ -52,6 +52,7 @@ random_initial_population = true
 random_initial_groups = false
 default_map = false
 update_peds = true
+activate_ped_robot_force = false
 
 [simulator.default]
 box_size = 20
@@ -92,3 +93,9 @@ obstacle2 = [ [ -7, -5, -7, -7,], [ -7, -7, -7, -3,], [ -7, -5, -3, -7,],]
 max_initial_peds = [0, 7, 15, 25, 40]
 max_initial_groups = 7
 max_peds_per_group = 3
+
+[simulator.robot]
+robot_radius = 1
+activation_threshold = 1
+force_multiplier = 1.0
+

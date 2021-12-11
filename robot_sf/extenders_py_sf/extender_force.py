@@ -41,6 +41,39 @@ def normalize(vecs):
 
 #%%
 
+class PedRobotForce(forces.Force):
+
+    def __init__(self,robot_radius = 1, activation_treshold = 0.5, force_multiplier = 1):
+        self.robot_radius = robot_radius
+        self.activation_treshold = activation_treshold
+        #print('Robot radius is:\t %2.2f' % self.robot_radius)
+        #print('Activation threshold is:\t%2.2f' % self.activation_treshold)
+        super().__init__()
+        self.robot_state = np.array([[1e5,1e5]],dtype=float)
+        self.force_multiplier = force_multiplier
+
+    def updateRobotState(self,pos):
+        self.robot_state = pos
+        
+
+    def _get_force(self) -> np.ndarray:
+        sigma = self.config("sigma", 0.2)
+        threshold = self.activation_treshold + self.peds.agent_radius
+        force = np.zeros((self.peds.size(), 2))
+        pos = self.peds.pos()
+
+        for i, p in enumerate(pos):
+            diff = p - self.robot_state
+            directions, dist = stateutils.normalize(diff)
+            dist = dist - self.peds.agent_radius -self.robot_radius
+            if np.all(dist >= threshold):
+                continue
+            dist_mask = dist < threshold
+            directions[dist_mask] *= np.exp(-dist[dist_mask].reshape(-1, 1) / sigma)
+            force[i] = np.sum(directions[dist_mask], axis=0)
+        return force * self.force_multiplier
+
+
 class DesiredForce(forces.Force):
     """Calculates the force between this agent and the next assigned waypoint.
     If the waypoint has been reached, the next waypoint in the list will be

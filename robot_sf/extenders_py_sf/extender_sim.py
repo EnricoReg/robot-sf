@@ -15,6 +15,8 @@ import json
 import copy
 from natsort import natsorted
 import warnings
+
+from torch._C import dtype
 warnings.filterwarnings("ignore", category=RuntimeWarning)
 
 
@@ -27,7 +29,7 @@ from pysocialforce.utils import stateutils
 
 #src.extenders_py_sf.
 from .extender_scene import PedState
-from .extender_force import DesiredForce, GroupRepulsiveForce
+from .extender_force import DesiredForce, GroupRepulsiveForce, PedRobotForce
 
 from ..utils.utilities import fill_state, fun_reduce_index #check_peds_validity
 from ..utils.poly import Polygon
@@ -42,6 +44,8 @@ class ExtdSimulator(psf.Simulator):
         self.difficulty = difficulty #Added difficulty
         self.box_size = None   #Implemented in load config
         self.peds_sparsity = None    #average min m^2 per person #Implemented in load config
+
+        self.sim_config_user = None
         
         self.obstacles_lolol = None #Implemented in load config
         self.obstacle_avoidance_params = None
@@ -104,7 +108,7 @@ class ExtdSimulator(psf.Simulator):
         
         
         obs_filtered = [sublist for sublist in obstacles if not (sublist[0]==sublist[1] and sublist[2]==sublist[3])]
-        
+        self.addRobot([1e5,1e5,0])
         
         super().__init__(state, groups, obs_filtered, config_file)
         
@@ -148,14 +152,30 @@ class ExtdSimulator(psf.Simulator):
                                            p1 = self.obstacle_avoidance_params[2],
                                            view_distance = self.obstacle_avoidance_params[3],
                                            forgetting_factor = self.obstacle_avoidance_params[4])
- 
-        force_list = [
-            forceDes,                               ####################  changed
-            forces.SocialForce(),
-            forces.ObstacleForce(),
-            #forces.PedRepulsiveForce(),
-            # forces.SpaceRepulsiveForce(),
-        ]
+
+        ped_rob_force = PedRobotForce(self.sim_config_user['simulator']['robot']['robot_radius'], self.sim_config_user['simulator']['robot']['activation_threshold'],\
+            self.sim_config_user['simulator']['robot']['force_multiplier'])
+        ped_rob_force.updateRobotState(np.array([[self.robot['x'],self.robot['y']]],dtype=float))
+
+        if self.sim_config_user['simulator']['flags']['activate_ped_robot_force']:
+            #print('Robot-Ped force is active!')
+            force_list = [
+                forceDes,                               ####################  changed
+                forces.SocialForce(),
+                forces.ObstacleForce(),
+                ped_rob_force,
+                #forces.PedRepulsiveForce(),
+                # forces.SpaceRepulsiveForce(),
+            ]
+        else:
+            #print('Robot-Ped force is not active!')
+            force_list = [
+                forceDes,                               ####################  changed
+                forces.SocialForce(),
+                forces.ObstacleForce(),
+                #forces.PedRepulsiveForce(),
+                # forces.SpaceRepulsiveForce(),
+            ]
         group_forces = [
             forces.GroupCoherenceForceAlt(),
             GroupRepulsiveForce(),                  ####################  changed
@@ -228,8 +248,12 @@ class ExtdSimulator(psf.Simulator):
         self.robot['orient'] = coordinates[2]
 
 
-    def addRobot(self, action_radius, coordinates):
-        self.robot['radius'] = action_radius
+    def addRobot(self, coordinates, new_action_radius = None):
+        if new_action_radius is None:
+            self.robot['radius'] = self.sim_config_user['simulator']['robot']['robot_radius']
+        else:
+            self.robot['radius'] = new_action_radius
+
         self.updateRobotCoord(coordinates)
 
 
@@ -1436,6 +1460,8 @@ class ExtdSimulator(psf.Simulator):
         
         self.obstacle_avoidance_params = obstacle_avoidance_params
         self.obstacles_lolol = obstacles_lolol
+
+        self.sim_config_user = data
         
         return state, groups, obstacle
     

@@ -26,7 +26,7 @@ class BinaryOccupancyGrid():
             self.peds_sim_env = ExtdSimulator(np.zeros((1,7)) )                  
         else:
             self.peds_sim_env = peds_sim_env        
-
+        
         self.map_height = map_height
         self.map_length = map_length
         self.map_resolution = map_resolution
@@ -50,6 +50,7 @@ class BinaryOccupancyGrid():
         self.Occupancy = np.zeros((self.grid_size['y'],self.grid_size['x']), dtype = bool)
         self.OccupancyRaw = self.Occupancy.copy()
         self.OccupancyFixed = self.Occupancy.copy()
+        self.OccupancyRobot = self.Occupancy.copy()
         self.OccupancyFixedRaw = self.Occupancy.copy()
         self.OccupancyOverall = self.Occupancy.copy()
 
@@ -242,7 +243,6 @@ class BinaryOccupancyGrid():
     def raycast(self, start_pt, end_pt):
         ''' Here it will be developed the easiest 
         implementation for a raycasting algorithm'''
-
         #Start point must belong to the map!
         idx_start = self.convert_world_to_grid(start_pt)
         #End point can also not belong to the map. We access to the last available
