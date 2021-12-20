@@ -61,7 +61,6 @@ class LiDARscanner():
         and an input map (map object) and returns a data structure
         containing the sensor readings'''
         self.emptyScanStructure()
-        print(self.counter)
         start_pt = [x,y]
         self.scan_structure['data']['pose'] = [x,y,orient]
 
